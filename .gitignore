@@ -1,0 +1,32 @@
+# Environment files (contains sensitive secrets/passwords)
+.env
+.env.*
+!.env.example
+
+# Git metadata directory (normally managed by Git, ignored if inside a subfolder or explicitly excluded)
+.git/
+
+# Docker build and state files / local overrides
+docker-compose.override.yml
+*.tar.gz
+*.tar
+
+# Go binary outputs and executables
+/main
+/app
+*.exe
+*.exe;
+*.dll
+*.so
+*.dylib
+
+# Go build cache and vendor folder
+vendor/
+*.test
+*.out
+
+# IDE and OS specific files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

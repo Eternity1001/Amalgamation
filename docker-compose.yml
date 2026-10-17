@@ -1,0 +1,37 @@
+services:
+  server:
+    build:
+      context: .
+      dockerfile: dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      PGHOST: postgres
+      PGPORT: "5432"
+      PGDATABASE: ${POSTGRES_DB:-amalgamation}
+      PGUSER: ${POSTGRES_USER:-amalgamation}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-amalgamation_dev}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-amalgamation}
+      POSTGRES_USER: ${POSTGRES_USER:-amalgamation}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-amalgamation_dev}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
