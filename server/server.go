@@ -42,7 +42,6 @@ func sendHello(conn net.Conn) {
         return
     }
 
-    // Convert the raw bytes into a string and print it to your terminal!
     requestString := string(buffer[:n])
     fmt.Println("--- INCOMING REQUEST ---")
     fmt.Println(requestString)
