@@ -1,23 +1,60 @@
 package main
 
 import (
-	"log"
-	"net/http"
+	"fmt"
+	"net"
 )
 
-func main() {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" {
-			http.NotFound(w, r)
-			return
-		}
-		http.ServeFile(w, r, "html/index.html")
-	})
-	mux.Handle("/html/", http.StripPrefix("/html/", http.FileServer(http.Dir("html"))))
-	mux.Handle("/js/", http.StripPrefix("/js/", http.FileServer(http.Dir("js"))))
-	mux.Handle("/photo/", http.StripPrefix("/photo/", http.FileServer(http.Dir("photo"))))
 
-	log.Println("Server listening on http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", mux))
+func main(){
+
+	socket, err := net.Listen("tcp", ":8080")
+
+	if err != nil {
+		fmt.Println("Error: ", err)
+        return
+	}
+	defer socket.Close()
+    
+    fmt.Println("Server listening on http://localhost:8080")
+	
+    for {
+		conn, err := socket.Accept()
+		if err != nil {
+			fmt.Println("Connection error:", err)
+			continue
+		}
+		go sendHello(conn)
+	}
+
+}
+
+
+
+func sendHello(conn net.Conn) {
+    defer conn.Close()
+
+    // Read the browser's HTTP request
+    buffer := make([]byte, 2048)
+    n, err := conn.Read(buffer)
+    if err != nil {
+        fmt.Println("Read error:", err)
+        return
+    }
+
+    // Convert the raw bytes into a string and print it to your terminal!
+    requestString := string(buffer[:n])
+    fmt.Println("--- INCOMING REQUEST ---")
+    fmt.Println(requestString)
+    fmt.Println("------------------------")
+
+    // Send a valid HTTP response
+    response := "HTTP/1.1 200 OK\r\n" +
+        "Content-Type: text/plain\r\n" +
+        "Content-Length: 21\r\n" +
+        "Connection: close\r\n" +
+        "\r\n" +
+        "Hell0 fr0m Go server!"
+
+    conn.Write([]byte(response))
 }
