@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Minimal Navbar</title>
+        <link rel="stylesheet" href="/css/index.css">
+    </head>
+
+    <body>
+
+        <header class="navbar-header">
+            <nav class="navbar">
+                <a href class="logo-link" aria-label="Home">
+                    <img src="/photo/test.jpg" alt="Company Logo"
+                        class="logo-img">
+                </a>
+                <div class="nav-actions">
+                    <button id="loginBtn" class="btn-login" onclick="login()">Log In</button>
+                </div>
+            </nav>
+        </header>
+            <div class="projectInformation">
+                <h1 id="websiteTitle">Amalgamation</h1>
+                <p id="websiteInformation">A mix of random stuff combined into a
+                    single website</p>
+            </div>
+        <div class="features-container">
+            <div class="websiteCompletedFeature feature-card">
+                <h2 id="completionStatus">Completed</h2>
+                <ul class="completedFeature">
+                    <li>None</li>
+                </ul>
+            </div>
+            <div class="websiteWIPFeature feature-card">
+                <h2>Work In Progress</h2>
+                <ul class="WIPFeature">
+                    <li>Home page</li>
+                </ul>
+            </div>
+            <div class="WebsitePlannedFeature feature-card">
+                <h2>Planned Work</h2>
+                <ul class="plannedFeature">
+                    <li>Login Page</li>
+                    <li>Sign Up page</li>
+                    <li>Forget Password</li>
+                </ul>
+            </div>
+        </div>
+        <script src="../js/index.js"></script>
+    </body>
+</html>
