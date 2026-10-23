@@ -1,7 +1,7 @@
 // Simply redirect the user to the login Page
 
 function login(){
-    window.location.href = "login.html"
+    window.location.href = "signin.html"
 }
 
 // ERandom For Fun
