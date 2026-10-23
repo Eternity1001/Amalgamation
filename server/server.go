@@ -7,17 +7,13 @@ import (
 
 
 func main(){
-
 	socket, err := net.Listen("tcp", ":8080")
-
 	if err != nil {
 		fmt.Println("Error: ", err)
         return
 	}
 	defer socket.Close()
     
-    fmt.Println("Server listening on http://localhost:8080")
-	
     for {
 		conn, err := socket.Accept()
 		if err != nil {
@@ -28,7 +24,6 @@ func main(){
 	}
 
 }
-
 
 
 func sendHello(conn net.Conn) {
@@ -42,18 +37,24 @@ func sendHello(conn net.Conn) {
         return
     }
 
-    requestString := string(buffer[:n])
     fmt.Println("--- INCOMING REQUEST ---")
-    fmt.Println(requestString)
-    fmt.Println("------------------------")
+	request := parseHttpRequest(buffer[:n])
+	route := routeRequest(*request, conn)
+	// request.print(true)
+    fmt.Println("\n------------------------")
+
+    // requestString := string(buffer[:n])
+    // fmt.Println("--- INCOMING REQUEST ---")
+    // fmt.Println(requestString)
 
     // Send a valid HTTP response
-    response := "HTTP/1.1 200 OK\r\n" +
-        "Content-Type: text/plain\r\n" +
-        "Content-Length: 21\r\n" +
-        "Connection: close\r\n" +
-        "\r\n" +
-        "Hell0 fr0m Go server!"
 
-    conn.Write([]byte(response))
+	if route != 0 {
+		fmt.Println("data Broken")
+	}
+	// response := createDefaultHttpResponse()
+	// response.addBody("text/plain", []byte("Hello Froms server"))
+    // conn.Write(response.convertBytes())
+    // conn.Write(route.convertBytes())
+
 }

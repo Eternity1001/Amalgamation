@@ -7,8 +7,9 @@ import (
 	"net"
 	"os"
 	"strings"
-)
 
+)
+// Convert a incoming requests to HttpRequests to process
 type HttpRequest struct {
 	method  string
 	path    string
@@ -17,24 +18,22 @@ type HttpRequest struct {
 	body    []byte
 }
 
-func (request *HttpRequest) parseHttpRequest(recvRequest []byte){
-	fmt.Println(string(recvRequest))
-}
-
+// Takes a incoming request and fill the struct HttpRequest
 func parseHttpRequest(recvRequest []byte) *HttpRequest {
+
+	// Generate the struct
 	request := &HttpRequest{
 		headers:make(map[string]string),
 		body:  []byte{},
 	}
-
+	// Split by new line
 	splitedRequest := bytes.Split(recvRequest, []byte("\r\n"))
 	methodPath := (bytes.Split(splitedRequest[0], []byte(" ")))
-
 	request.method = string(methodPath[0])
 	request.path = string(methodPath[1])
 	request.httpVersion = string(methodPath[2])
 
-
+	// Since we got path, method, we do this to get headers
 	for _, line := range splitedRequest[1:len(splitedRequest) - 1] {
 		if len(line) <= 0 {
 			break
@@ -42,7 +41,7 @@ func parseHttpRequest(recvRequest []byte) *HttpRequest {
 		splitLines := bytes.Split(line, []byte(": "))
 		request.headers[string(splitLines[0])] = string(splitLines[1])
 	}
-
+	// We check if content length exist so we can get the body
 	_, exist := request.headers["Content-Length"]
 	
 	if exist {
@@ -52,7 +51,7 @@ func parseHttpRequest(recvRequest []byte) *HttpRequest {
 	return request
 
 }
-
+// Take HttpRequest Struct and print out it details. Useful for debugging
 func (request *HttpRequest) print(body bool){
 
 
@@ -77,21 +76,25 @@ func (request *HttpRequest) print(body bool){
 	fmt.Printf("%s", requestString.String())
 }
 
+// Contains functions call for request. Automatically sent the response back
 type Router struct {
 	request HttpRequest
 	conn net.Conn
-	functionMap map[string](map[string]func() *HttpResponse)
+	functionMap map[string](map[string]func() int)
 }
 
 
-func routeRequest(request HttpRequest, conn net.Conn) *HttpResponse {
+// Takes a request and Conn and send the proper response back
+// 0: Success 1: Fail
+func routeRequest(request HttpRequest, conn net.Conn) int {
 
 	route := &Router {
 		request: request,
-		functionMap: make(map[string]map[string]func() *HttpResponse),
+		conn: conn,
+		functionMap: make(map[string]map[string]func() int),
 	}
-	route.functionMap["/"] = make(map[string]func() *HttpResponse)
-	route.functionMap["/"]["GET"] = route.rootPath
+	route.functionMap["/"] = make(map[string]func() int)
+	route.functionMap["/"]["GET"] = route.sendHomePage
 	
 	fmt.Printf("Method: %s, Path: %s", route.request.method, route.request.path)
 	path, pathExist := route.functionMap[request.path]
@@ -110,38 +113,44 @@ func routeRequest(request HttpRequest, conn net.Conn) *HttpResponse {
 	return method()
 }
 
-
-func (route *Router) failedRequest() *HttpResponse {
+// Send a default fail response back 
+func (route *Router) failedRequest() int {
 	response := createDefaultHttpResponse()
 	response.addStatus("404", "Not Found")
-	body := make([]byte, 0,  1024)
-	body = (fmt.Appendf(body, "Incorrect Method: %s Incorrect Path: %s", route.request.method, route.request.path))
-	return response
+	msg :=fmt.Sprintf("Incorrect Method: %s Incorrect Path: %s", route.request.method, route.request.path)
+	response.addBody("text/plain", []byte(msg), fmt.Sprintf("%d",len(msg) ))
+	
+	route.conn.Write(response.convertBytes())
+	return 0
 }
 
-func (route *Router) rootPath() *HttpResponse{
+// Sent the home page for the website
+func (route *Router) sendHomePage() int{
 
-
-	file, err := os.Open("../html/index.html")
-
+	file, err := os.Open("./html/index.html")
 	if err != nil {
-		fmt.Println("fatal erorr");
+		fmt.Println("fatal error opening file:", err)
+		return 0 
 	}
-
 	defer file.Close()
 
+	// 2. Get file stats
 	fileInfo, err := file.Stat()
-
 	if err != nil {
-		fmt.Println("Error")
+		fmt.Println("Error getting file stats:", err)
+		return 0
 	}
 
 	fileSize := fileInfo.Size()
-	data 
-	_,err = io.Copy()
+	fileSizeStr := fmt.Sprintf("%d", fileSize)
 	response := createDefaultHttpResponse()
-	response.addBody("Content-Type: text/html; charset=utf-8", string(fileSize))
-	return response
+	response.addBody("Content-Type: text/html; charset=utf-8", []byte(""), fileSizeStr)
+	route.conn.Write(response.convertBytes())
+	_, err = io.Copy(route.conn, file)
+	if err != nil {
+		fmt.Println("Error streaming file:", err)
+	}
+	return 0
 }
 
 
@@ -153,12 +162,13 @@ type HttpResponse struct {
 	body        []byte
 }
 
+// Create a generic http Response 
 func createDefaultHttpResponse() *HttpResponse {
 	response := &HttpResponse{
 		httpVersion: "HTTP/1.1 ",
 		statusCode:  "200 OK",
 		headers:     make(map[string]string),
-		body:        []byte{},
+		body:        []byte(""),
 	}
 	response.headers["Content-Length"] = "0"
 	response.headers["Content-Type"] = "text/plain"
@@ -166,21 +176,25 @@ func createDefaultHttpResponse() *HttpResponse {
 	return response
 }
 
+// Modify the response struct to add / change the status code
 func (response *HttpResponse) addStatus(statusCode string, msg string) {
 	response.statusCode = statusCode
 	response.statusMsg = msg
 }
 
+// Add new header to response struct
 func (response *HttpResponse) addHeaders(key string, value string) {
 	response.headers[key] = value
 }
 
+// Add a body to the response struct
 func (response *HttpResponse) addBody(dataType string, data []byte, length string) {
 	response.headers["Content-Type"] = dataType
 	response.body = data
 	response.headers["Content-Length"] = length
 }
 
+// Fao
 func (response *HttpResponse) convertBytes() []byte {
 	var byteResponse strings.Builder
 
